@@ -1,0 +1,66 @@
+diff --git a/media/codec2/core/include/C2Config.h b/media/codec2/core/include/C2Config.h
+index 29bccd5dc5..4cd42edbbf 100644
+--- a/media/codec2/core/include/C2Config.h
++++ b/media/codec2/core/include/C2Config.h
+@@ -249,6 +249,9 @@ enum C2ParamIndexKind : C2Param::type_index_t {
+ 
+     // low latency mode
+     kParamIndexLowLatencyMode, // bool
++
++    // FFMPEG
++    kParamIndexRawCodecData,
+ };
+ 
+ }
+@@ -2182,6 +2185,10 @@ inline C2TimestampGapAdjustmentStruct::C2TimestampGapAdjustmentStruct()
+ typedef C2PortParam<C2Tuning, C2TimestampGapAdjustmentStruct> C2PortTimestampGapTuning;
+ constexpr char C2_PARAMKEY_INPUT_SURFACE_TIMESTAMP_ADJUSTMENT[] = "input-surface.timestamp-adjustment";
+ 
++// FFMEG
++typedef C2StreamParam<C2Info, C2BlobValue, kParamIndexRawCodecData> C2StreamRawCodecDataInfo;
++constexpr char C2_PARAMKEY_RAW_CODEC_DATA[] = "coded.raw-codec-data";
++
+ /// @}
+ 
+ #endif  // C2CONFIG_H_
+diff --git a/media/codec2/sfplugin/CCodecConfig.cpp b/media/codec2/sfplugin/CCodecConfig.cpp
+index 96f86e8d59..9724272049 100644
+--- a/media/codec2/sfplugin/CCodecConfig.cpp
++++ b/media/codec2/sfplugin/CCodecConfig.cpp
+@@ -917,6 +917,10 @@ void CCodecConfig::initializeStandardParams() {
+     KEY_AUDIO_SESSION_ID // we use "audio-hw-sync"
+     KEY_OUTPUT_REORDER_DEPTH
+     */
++
++    // FFMPEG
++    add(ConfigMapper("raw-codec-data", C2_PARAMKEY_RAW_CODEC_DATA, "value")
++        .limitTo(D::DECODER & D::CODED));
+ }
+ 
+ status_t CCodecConfig::initialize(
+diff --git a/media/libstagefright/Utils.cpp b/media/libstagefright/Utils.cpp
+index 6a0efce88b..3fc8e57349 100644
+--- a/media/libstagefright/Utils.cpp
++++ b/media/libstagefright/Utils.cpp
+@@ -780,6 +780,9 @@ static std::vector<std::pair<const char *, uint32_t>> bufferMappings {
+         { "sei", kKeySEI },
+         { "text-format-data", kKeyTextFormatData },
+         { "thumbnail-csd-hevc", kKeyThumbnailHVCC },
++#ifdef __ANDROID_FFMPEG_EXT__
++	{ "raw-codec-data", kKeyRawCodecData },
++#endif
+     }
+ };
+ 
+diff --git a/media/libstagefright/include/media/stagefright/MetaDataBase.h b/media/libstagefright/include/media/stagefright/MetaDataBase.h
+index 88dc2e87f1..e00255f2e8 100644
+--- a/media/libstagefright/include/media/stagefright/MetaDataBase.h
++++ b/media/libstagefright/include/media/stagefright/MetaDataBase.h
+@@ -261,6 +261,7 @@ enum {
+     kKeyCodecId          = 'cdci', // int32_t
+     kKeyEncoderOptions   = 'eopt', // int32_t
+     kKeyWMAChannelMask   = 'wmcm', // int32_t
++    kKeyRawCodecData     = 'rcdt', // int32_t
+ };
+ #endif // __ANDROID_FFMPEG_EXT__
+ 
